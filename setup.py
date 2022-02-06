@@ -22,10 +22,10 @@ setup(
     ext_modules= [
         Pybind11Extension(
             "csrreader",
-            sorted(glob("src/*.cpp")),  # Sort source files for reproducibility
+            ['mmio_read.cpp']
         ),
     ],
     cmdclass={
         'build_ext': BuildExtension
-    })
+    }
 )
