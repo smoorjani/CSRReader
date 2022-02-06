@@ -1,23 +1,26 @@
 import csv
 import sys
+from numpy import dtype
+import torch
+
 from csrreader import read_mmio
 
 def read_csv(filename, delim=None):
+    rowptr, colptr, val = [], [], []
     delim = delim if delim is not None else ','
     with open(filename, newline='', delimiter=delim) as f:
         reader = csv.reader(f)
-        data = list(reader)
+        for line in reader:
+            val.append(line[0])
+            colptr.append(line[1])
+            rowptr.append(line[2])
 
-    rowptr, colptr, val = [], [], []
-    for i in range(len(data), 3):
-        rowptr.append(data[i])
-        colptr.append(data[i+1])
-        val.append(data[i+2])
+    return torch.Tensor(val), torch.Tensor(colptr, dtype=torch.int16), torch.Tensor(rowptr, dtype=torch.int16)
     
 if  __name__ == "__main__":
     filename = sys.argv[1]
     
-    rowptr, colptr, val =  [], [], []
+    rowptr, colptr, val = torch.Tensor(), torch.Tensor(), torch.Tensor()
     if '.csv' in filename:
         rowptr, colptr, val = read_csv(filename)
     elif '.tsv' in filename:

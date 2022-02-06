@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <torch/extension.h>
+
 #include "mmio.h"
 
-void read_mmio(std::string filename, py::list& pyI, py::list& pyJ, py::list& pyval) {
+using namespace torch::indexing;
+
+void read_mmio(std::string filename, torch::Tensor I, torch::Tensor J, torch::Tensor val) {
     FILE *f;
     if ((f = fopen(filename, "r")) == NULL) {
         throw std::runtime_error("Could not open file");
@@ -27,21 +31,20 @@ void read_mmio(std::string filename, py::list& pyI, py::list& pyJ, py::list& pyv
         throw std::runtime_error("Issue with mm_read_mtx_crd_size");
     }   
     
-    int i
     /* reseve memory for matrices */
+    I = torch::zeros(nz, torch::TensorOptions().dtype(torch::kInt16));
+    J = torch::zeros(nz, torch::TensorOptions().dtype(torch::kInt16));
+    val = torch::zeros(nz, torch::TensorOptions().dtype(torch::kFloat64));
 
-    int *I = (int *) malloc(nz * sizeof(int));
-    int *J = (int *) malloc(nz * sizeof(int));
-    double *val = (double *) malloc(nz * sizeof(double));
-
-    pyI = py::cast(I)
-    pyJ = py::cast(J)
-    pyval = py::cast(val)
-
-    for (int i = 0; i < nz; i++) {
-        fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
-        I[i]--;  /* adjust from 1-based to 0-based */
-        J[i]--;
+    int i, j;
+    double v;
+    for (int idx = 0; idx < nz; idx++) {
+        fscanf(f, "%d %d %lg\n", &i, &j, &v);
+        i--;  /* adjust from 1-based to 0-based */
+        j--;
+        I.index_put_({idx}, i)
+        J.index_put_({idx}, j)
+        val.index_put_({idx}, v)
     }
     
     if (f != stdin) {
