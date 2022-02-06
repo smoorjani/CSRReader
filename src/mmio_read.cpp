@@ -7,8 +7,9 @@
 using namespace torch::indexing;
 
 void read_mmio(std::string filename, torch::Tensor I, torch::Tensor J, torch::Tensor val) {
+    const char *c_filename = filename.c_str();
     FILE *f;
-    if ((f = fopen(filename, "r")) == NULL) {
+    if ((f = fopen(c_filename, "r")) == NULL) {
         throw std::runtime_error("Could not open file");
     }
 
@@ -22,7 +23,7 @@ void read_mmio(std::string filename, torch::Tensor I, torch::Tensor J, torch::Te
     if (mm_is_complex(matcode) && mm_is_matrix(matcode) && 
             mm_is_sparse(matcode) )
     {
-        throw std::runtime_error("Sorry, this application does not support Market Market type: [%s]\n", mm_typecode_to_str(matcode));
+        throw std::runtime_error("Sorry, this application does not support this Market Market type\n");
     }
     
     int ret_code, M, N, nz; 
@@ -42,9 +43,9 @@ void read_mmio(std::string filename, torch::Tensor I, torch::Tensor J, torch::Te
         fscanf(f, "%d %d %lg\n", &i, &j, &v);
         i--;  /* adjust from 1-based to 0-based */
         j--;
-        I.index_put_({idx}, i)
-        J.index_put_({idx}, j)
-        val.index_put_({idx}, v)
+        I.index_put_({idx}, i);
+        J.index_put_({idx}, j);
+        val.index_put_({idx}, v);
     }
     
     if (f != stdin) {
