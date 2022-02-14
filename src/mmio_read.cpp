@@ -40,8 +40,6 @@ void read_mmio(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     }
     
     /* reseve memory for matrices */
-    // TODO: see if unsigned
-    std::cout << (sizeof(T_idx)) << std::endl;
     I = (T_idx*) malloc(nz * sizeof(T_idx));
     J = (T_idx*) malloc(nz * sizeof(T_idx));
     val = (T_val*) malloc(nz * sizeof(T_val));
@@ -57,7 +55,6 @@ void read_mmio(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     }
 }
 
-// TODO: read tsv/csv 
 template <typename T_idx, T_val>
 void read_csv(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     const char *c_filename = filename.c_str();
@@ -73,7 +70,8 @@ void read_csv(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     
     // get filesize
     while (!feof(f)) {
-        fscanf(f, "%d,%d,%lg\n", &tmprow, &Jtmpcol, &tmpval);
+        // TODO: support csv by changing delim
+        fscanf(f, "%d,%d,%lg\n", &tmprow, &tmpcol, &tmpval);
         nnz += 1;
         M = MAX(M, tmprow);
         M = MAX(M, tmpcol);
@@ -81,9 +79,9 @@ void read_csv(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     
     fseek(f, 0, SEEK_SET);
 
-    I = (T_idx*) malloc(nz * sizeof(T_idx));
-    J = (T_idx*) malloc(nz * sizeof(T_idx));
-    val = (T_val*) malloc(nz * sizeof(T_val));
+    I = (T_idx*) malloc(nnz * sizeof(T_idx));
+    J = (T_idx*) malloc(nnz * sizeof(T_idx));
+    val = (T_val*) malloc(nnz * sizeof(T_val));
 
     for (T_idx i = 0; i < nnz; i++) {
         fscanf(f, "%d,%d,%lg\n", &I[i], &J[i], &val[i]);
@@ -94,46 +92,10 @@ void read_csv(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     }
 }
 
-template <typename T_idx, T_val>
-void read_tsv(std::string filename, T_idx* I, T_idx* J, T_val* val) {
-    const char *c_filename = filename.c_str();
-    FILE *f;
-    if ((f = fopen(c_filename, "r")) == NULL) {
-        throw std::runtime_error("Could not open file");
-    }
-
-    T_idx M, nnz = 0;
-    T_idx tmprow;
-    T_idx tmpcol;
-    T_idx tmpval;
-    
-    // get filesize
-    while (!feof(f)) {
-        fscanf(f, "%d\t%d\t%lg\n", &tmprow, &Jtmpcol, &tmpval);
-        nnz += 1;
-        M = MAX(M, tmprow);
-        M = MAX(M, tmpcol);
-    }
-    
-    fseek(f, 0, SEEK_SET);
-
-    I = (T_idx*) malloc(nz * sizeof(T_idx));
-    J = (T_idx*) malloc(nz * sizeof(T_idx));
-    val = (T_val*) malloc(nz * sizeof(T_val));
-
-    for (T_idx i = 0; i < nnz; i++) {
-        fscanf(f, "%d\t%d\t%lg\n", &I[i], &J[i], &val[i]);
-    }
-
-    if (f != stdin) {
-        fclose(f);
-    }
-}
-
 template <typename T_idx>
 void coo_to_csr(T_idx nnz, T_idx M, T_idx* coo_rowptr, T_idx* csr_rowptr) {
     // careful of bidirectional edges and undirected/directed
-    //
+
     if (nnz > M * M) {
         throw std::runtime_error("Too many nonzero values");
     }
@@ -149,8 +111,6 @@ void coo_to_csr(T_idx nnz, T_idx M, T_idx* coo_rowptr, T_idx* csr_rowptr) {
 template <typename T_idx>
 void coo_to_csr(T_idx nnz, T_idx M, torch::Tensor coo_rowptr, torch::Tensor csr_rowptr) {
     // careful of bidirectional edges and undirected/directed
-    // TODO: typecheck if nz > max
-    //
 
     if (nnz > M * M) {
         throw std::runtime_error("Too many nonzero values");
