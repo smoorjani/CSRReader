@@ -74,21 +74,81 @@ void read_csv(std::string filename, T_idx* I, T_idx* J, T_val* val, T_idx* _M, T
         throw std::runtime_error("Could not open file");
     }
 
-    T_idx M, nnz = 0;
+    if (delim != ',' && delim != '\t') {
+        throw std::runtime_error("Delimiter type not supported");
+    }
+
+    T_idx M, N, nnz = 0;
     T_idx tmprow;
     T_idx tmpcol;
     T_idx tmpval;
+    bool has_values = false;
+    long read_pos = 0;
+    
+    // try to read header
+    char parse_string[];
+    if (delim == ',') {
+        parse_string = "%lg,%lg,%lg\n";
+    } else {
+        parse_string = "%lg\t%lg\t%lg\n";
+    }
 
-    fseek(f, 0, SEEK_END);
-    size_t size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    if (fscanf(parse_string, &M, &N, &nnz) == 0) {
+        // successful read- able to obtain M N nnz
+        read_pos = ftell(f);
+    } else {
+        // header not included- need to calculate
+        fseek(f, 0, SEEK_SET);
+        M, N, nnz = 0; // reset values just in case
+    }
 
-    // 2 indices, 1 value, 2 delimiters, 1 newline
-    *nnz = size / (sizeof(T_idx) * 2 + sizeof(T_val) + sizeof(char) * 3);
+    // try to read first line to see number of arguments
+    if (delim == ',') {
+        parse_string = "%d,%d,%lg\n";
+    } else {
+        parse_string = "%d\t%d\t%lg\n";
+    }
+    if (fscanf(f, parse_string, &tmprow, &tmpcol, &val) == 0) {
+        // 3 params- has values
+        has_values = true;
+    } else {
+        // 2 params- no values
+        if (delim == ',') {
+            parse_string = "%d,%d\n";
+        } else {
+            parse_string = "%d\t%d\n";
+        }
+    }
+
+    // reset to start reading number of args
+    fseek(f, read_pos, SEEK_SET);
+
+    // don't know nnz
+    if (nnz == 0) {
+        fseek(f, 0, SEEK_END);
+        size_t size = ftell(f) - read_pos;
+        fseek(f, 0, SEEK_SET);
+        
+        if (has_values) {
+            // 2 indices, 1 value, 2 delimiters, 1 newline
+            *nnz = size / (sizeof(T_idx) * 2 + sizeof(T_val) + sizeof(char) * 3);
+        } else {
+            // 2 indices, 1 delimiter, 1 newline
+            *nnz = size / (sizeof(T_idx) * 2 + sizeof(char) * 2);
+        }
+
+    }
 
     I = (T_idx*) malloc(nnz * sizeof(T_idx));
     J = (T_idx*) malloc(nnz * sizeof(T_idx));
     val = (T_val*) malloc(nnz * sizeof(T_val));
+
+    char parse_string[];
+    if (delim == ',') {
+        parse_string = "%d,%d,%lg";
+    } else {
+        parse_string = "%d\t%d\t%lg";
+    }
 
     for (T_idx i = 0; i < nnz; i++) {
         fscanf(f, "%d,%d,%lg\n", &I[i], &J[i], &val[i]);
