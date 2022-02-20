@@ -41,8 +41,6 @@ void read_mmio(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     }
     
     /* reseve memory for matrices */
-    // TODO: see if unsigned
-    std::cout << (sizeof(T_idx)) << std::endl;
     I = (T_idx*) malloc(nz * sizeof(T_idx));
     J = (T_idx*) malloc(nz * sizeof(T_idx));
     val = (T_val*) malloc(nz * sizeof(T_val));
@@ -65,7 +63,6 @@ void read_mmio(std::string filename, T_idx* I, T_idx* J, T_val* val) {
     }
 }
 
-// TODO: read tsv/csv 
 template <typename T_idx, T_val>
 void read_csv(std::string filename, T_idx* I, T_idx* J, T_val* val, T_idx* _M, T_idx* _nnz, char delim=',') {
     const char *c_filename = filename.c_str();
@@ -167,7 +164,7 @@ void read_csv(std::string filename, T_idx* I, T_idx* J, T_val* val, T_idx* _M, T
 template <typename T_idx>
 void coo_to_csr(T_idx nnz, T_idx M, T_idx* coo_rowptr, T_idx* csr_rowptr) {
     // careful of bidirectional edges and undirected/directed
-    //
+
     if (nnz > M * M) {
         throw std::runtime_error("Too many nonzero values");
     }
@@ -183,8 +180,6 @@ void coo_to_csr(T_idx nnz, T_idx M, T_idx* coo_rowptr, T_idx* csr_rowptr) {
 template <typename T_idx>
 void coo_to_csr(T_idx nnz, T_idx M, torch::Tensor coo_rowptr, torch::Tensor csr_rowptr) {
     // careful of bidirectional edges and undirected/directed
-    // TODO: typecheck if nz > max
-    //
 
     if (nnz > M * M) {
         throw std::runtime_error("Too many nonzero values");
